@@ -24,3 +24,6 @@ gen
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+./grpc/.idea
+./product_images/.idea
+./micro/.idea
