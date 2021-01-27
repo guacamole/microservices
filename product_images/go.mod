@@ -1,4 +1,4 @@
-module product_images
+module github.com/guacamole/microservices/product_images
 
 go 1.15
 

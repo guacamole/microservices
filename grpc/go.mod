@@ -1,4 +1,4 @@
-module grpc
+module github.com/guacamole/microservices/grpc
 
 go 1.15
 

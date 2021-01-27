@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
-	"product_images/files"
+	"github.com/guacamole/microservices/product_images/files"
 	"strconv"
 )
 

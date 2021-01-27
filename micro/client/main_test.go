@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"micro/client/client"
+	"github.com/guacamole/microservices/micro/client/client"
 	"testing"
 )
 

@@ -21,7 +21,7 @@ import (
 	"context"
 	"github.com/gorilla/mux"
 	"log"
-	"micro/data"
+	"github.com/guacamole/microservices/micro/data"
 	"net/http"
 	"strconv"
 )

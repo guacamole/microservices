@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"product_images/files"
-	"product_images/handlers"
+	"github.com/guacamole/microservices/product_images/files"
+	"github.com/guacamole/microservices/product_images/handlers"
 	"time"
 )
 

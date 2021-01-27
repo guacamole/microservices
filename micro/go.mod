@@ -1,4 +1,4 @@
-module micro
+module github.com/guacamole/microservices/micro
 
 go 1.15
 

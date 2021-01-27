@@ -4,7 +4,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	//"google.golang.org/grpc"
 	"context"
-	"grpc/protos/currency"
+	"github.com/guacamole/microservices/grpc/protos/currency"
 )
 
 type Currency struct{

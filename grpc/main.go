@@ -1,11 +1,11 @@
 package main
 
 import (
+	"github.com/guacamole/microservices/grpc/protos/currency"
+	"github.com/guacamole/microservices/grpc/server"
 	"github.com/hashicorp/go-hclog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"grpc/protos/currency"
-	"grpc/server"
 	"net"
 	"os"
 )
