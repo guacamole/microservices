@@ -1,0 +1,134 @@
+basePath: /
+consumes:
+- application/json
+definitions:
+  GenericError:
+    properties:
+      message:
+        type: string
+        x-go-name: Message
+    type: object
+    x-go-package: micro/handlers
+  Product:
+    properties:
+      description:
+        type: string
+        x-go-name: Description
+      id:
+        description: the id of product
+        format: int64
+        minimum: 1
+        type: integer
+        x-go-name: ID
+      name:
+        type: string
+        x-go-name: Name
+      price:
+        format: float
+        type: number
+        x-go-name: Price
+      sku:
+        type: string
+        x-go-name: SKU
+    required:
+    - id
+    type: object
+    x-go-package: micro/data
+  ValidationError:
+    properties:
+      messages:
+        items:
+          type: string
+        type: array
+        x-go-name: Messages
+    type: object
+    x-go-package: micro/handlers
+info:
+  description: Documentation for Package
+  title: Product API
+  version: 1.0.0
+paths:
+  /Products:
+    get:
+      description: Returns a list of products
+      operationId: listProducts
+      responses:
+        "200":
+          $ref: '#/responses/productsResponse'
+  /Products/:
+    post:
+      description: adds a product to the list of products
+      operationId: addProduct
+      parameters:
+      - description: newly created product
+        in: body
+        name: Body
+        schema:
+          $ref: '#/definitions/Product'
+      responses:
+        "200":
+          $ref: '#/responses/productsResponse'
+        "422":
+          $ref: '#/responses/errorValidation'
+        "501":
+          $ref: '#/responses/errorResponse'
+  /Products/{id}:
+    delete:
+      description: Deletes a product from the database
+      operationId: deleteProduct
+      parameters:
+      - description: id of the product to be removed from the database
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+        x-go-name: ID
+      responses:
+        "201":
+          $ref: '#/responses/noContent'
+    put:
+      description: updates an existing product in the list of products
+      operationId: updateProduct
+      parameters:
+      - description: id of the product to be removed from the database
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+        x-go-name: ID
+      - description: newly created product
+        in: body
+        name: Body
+        schema:
+          $ref: '#/definitions/Product'
+      responses:
+        "201":
+          $ref: '#/responses/noContent'
+        "404":
+          $ref: '#/responses/errorResponse'
+        "422":
+          $ref: '#/responses/errorValidation'
+produces:
+- application/json
+responses:
+  errorResponse:
+    description: ""
+    schema:
+      $ref: '#/definitions/GenericError'
+  errorValidation:
+    description: ""
+    schema:
+      $ref: '#/definitions/ValidationError'
+  noContent:
+    description: ""
+  productsResponse:
+    description: List of the products returned in the response
+    schema:
+      items:
+        $ref: '#/definitions/Product'
+      type: array
+schemes:
+- http
+swagger: "2.0"
