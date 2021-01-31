@@ -5,8 +5,10 @@ import (
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/gorilla/mux"
 	"github.com/guacamole/microservices/grpc/protos/currency"
-	"log"
+	"github.com/guacamole/microservices/micro/data"
 	"github.com/guacamole/microservices/micro/handlers"
+	"github.com/hashicorp/go-hclog"
+	"google.golang.org/grpc"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,15 +17,25 @@ import (
 
 func main(){
 
-	l := log.New(os.Stdout,"product-api",log.LstdFlags)
-	ph := handlers.NewProducts(l)
+	l := hclog.New(&hclog.LoggerOptions{})
 
+	conn, err := grpc.Dial("Localhost:8888", grpc.WithInsecure())
+	if err != nil {
 
-	currency.NewCurrencyClient()
+		panic(err)
+	}
+	defer conn.Close()
+
+	//create client
+	cc := currency.NewCurrencyClient(conn)
+	ps := data.NewProductsDB(cc,l)
+
+	ph := handlers.NewProducts(l,cc, *ps)
  
 	sm := mux.NewRouter()
 	getRouter := sm.Methods(http.MethodGet).Subrouter()
 	getRouter.HandleFunc("/",ph.GetProducts)
+	getRouter.HandleFunc("/product/{id:[0-9]+}",ph.GetSingleProduct)
 
 	putRouter := sm.Methods(http.MethodPut).Subrouter()
 	putRouter.HandleFunc("/{id:[0-9]+}", ph.UpdateProducts)
@@ -44,7 +56,7 @@ func main(){
 
 
 	s := http.Server{
-		Addr:              ":8888",
+		Addr:              ":9009",
 		Handler:           sm,
 		TLSConfig:         nil,
 		ReadTimeout:       15 * time.Second,
@@ -55,23 +67,26 @@ func main(){
 
 	go func() {
 		if err := s.ListenAndServe(); err != nil {
-			l.Fatal("error connecting to the server", err)
+			l.Error("error connecting to the server", err)
+			return
 		}
 	}()
+
+	l.Info("started on port ",s.Addr)
 
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan,os.Interrupt)
 	signal.Notify(sigChan,os.Kill)
 
 	sig := <-sigChan
-	l.Println("received terminate,graceful shutdown ",sig)
+	l.Info("received terminate,graceful shutdown ",sig)
 
 	tc, cancel := context.WithTimeout(context.Background(), 30 *time.Second)
 
 	defer cancel()
 
 	if err := s.Shutdown(tc); err != nil {
-		l.Println("error shutting down: ", err)
+		l.Error("error shutting down: ", err)
 	}
 
 

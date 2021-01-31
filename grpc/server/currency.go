@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/guacamole/microservices/grpc/data"
 	"github.com/hashicorp/go-hclog"
 	//"google.golang.org/grpc"
 	"context"
@@ -9,17 +10,23 @@ import (
 
 type Currency struct{
 
+	rates *data.ExchangeRates
 	log hclog.Logger
 }
 
-func NewCurrency(l hclog.Logger) *Currency{
+func NewCurrency(r *data.ExchangeRates, l hclog.Logger) *Currency{
 
-	return &Currency{l}
+	return &Currency{r,l}
 }
 
 func (c *Currency) GetRate(ctx context.Context, rr *currency.RateRequest) (*currency.RateResponse, error) {
 
 	c.log.Info("Handle GetRate","base",rr.GetBase(),"destination",rr.GetDest())
-	return &currency.RateResponse{Rate: 0.5},nil
 
+	rate,err := c.rates.GetRate(rr.Base.String(),rr.Dest.String())
+
+	if err != nil {
+		return nil, err
+	}
+	return &currency.RateResponse{Rate: rate}, nil
 }
