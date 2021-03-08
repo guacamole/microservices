@@ -22,7 +22,3 @@ require (
 	google.golang.org/grpc v1.35.0
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 )
-
-replace github.com/guacamole/microservices/micro => /Users/gunjanvalecha/oss/microservices/micro
-
-replace github.com/guacamole/microservices/grpc => /Users/gunjanvalecha/oss/microservices/grpc
