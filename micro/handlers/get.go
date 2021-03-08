@@ -20,9 +20,10 @@ func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
 	p.l.Debug("handling GET all method")
 	rw.Header().Add("Content-type","application/json")
 
-	lp,err := p.productDB.GetProducts("")
+	cur := r.URL.Query().Get("currency")
+	p.l.Info("currency: ", cur)
+	lp,err := p.productDB.GetProducts(cur)
 	if err != nil {
-
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -44,7 +45,9 @@ func (p *Products) GetSingleProduct(rw http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
 
-	sp,err := p.productDB.GetProductByID(id,"")
+	cur := r.URL.Query().Get("currency")
+
+	sp,err := p.productDB.GetProductByID(id,cur)
 
 	switch err{
 	case nil:

@@ -11,37 +11,35 @@ import (
 	"os"
 )
 
-func main(){
+func main() {
 
 	log := hclog.Default()
 
-	gs:= grpc.NewServer()
+	gs := grpc.NewServer()
 
 	rates, err := data.NewRates(log)
 
 	if err != nil {
-		log.Error("couldn't generate rates","error",err)
+		log.Error("couldn't generate rates", "error", err)
 		os.Exit(1)
 	}
 
-	cs := server.NewCurrency(rates,log)
+	cs := server.NewCurrency(rates, log)
 
-	currency.RegisterCurrencyServer(gs,cs)
+	currency.RegisterCurrencyServer(gs, cs)
 
 	reflection.Register(gs)
 
-	l,err := net.Listen("tcp",":8888")
-	if err != nil{
-		log.Error("error listening","error:",err)
-		os.Exit(1 )
+	l, err := net.Listen("tcp", ":8888")
+	if err != nil {
+		log.Error("error listening", "error:", err)
+		os.Exit(1)
 	}
 
 	log.Info("Starting server at Localhost :8888")
 
 	err = gs.Serve(l)
-	if err != nil{
-		log.Error("unable to start server","error",err)
+	if err != nil {
+		log.Error("unable to start server", "error", err)
 	}
 }
-
-

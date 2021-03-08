@@ -17,25 +17,27 @@ import (
 
 func main(){
 
-	l := hclog.New(&hclog.LoggerOptions{})
+	l := hclog.Default()
 
-	conn, err := grpc.Dial("Localhost:8888", grpc.WithInsecure())
+	conn, err := grpc.Dial(":8888", grpc.WithInsecure())
 	if err != nil {
-
 		panic(err)
 	}
+
 	defer conn.Close()
 
 	//create client
 	cc := currency.NewCurrencyClient(conn)
 	ps := data.NewProductsDB(cc,l)
-
 	ph := handlers.NewProducts(l,cc, *ps)
- 
+
 	sm := mux.NewRouter()
 	getRouter := sm.Methods(http.MethodGet).Subrouter()
 	getRouter.HandleFunc("/",ph.GetProducts)
+	getRouter.HandleFunc("/",ph.GetProducts).Queries("currency","{[A-Z]{3}}")
+
 	getRouter.HandleFunc("/product/{id:[0-9]+}",ph.GetSingleProduct)
+	getRouter.HandleFunc("/product/{id:[0-9]+}",ph.GetSingleProduct).Queries("currency","{[A-Z]{3}}")
 
 	putRouter := sm.Methods(http.MethodPut).Subrouter()
 	putRouter.HandleFunc("/{id:[0-9]+}", ph.UpdateProducts)
@@ -54,7 +56,6 @@ func main(){
 	getRouter.Handle("/swagger.yaml",http.FileServer(http.Dir("./")))
 	getRouter.Handle("/docs",sh)
 
-
 	s := http.Server{
 		Addr:              ":9009",
 		Handler:           sm,
@@ -62,8 +63,8 @@ func main(){
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,
 		IdleTimeout:       120 * time.Second,
+		ErrorLog: l.StandardLogger(&hclog.StandardLoggerOptions{}),
 	}
-
 
 	go func() {
 		if err := s.ListenAndServe(); err != nil {
@@ -71,7 +72,6 @@ func main(){
 			return
 		}
 	}()
-
 	l.Info("started on port ",s.Addr)
 
 	sigChan := make(chan os.Signal)

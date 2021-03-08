@@ -29,29 +29,44 @@ type Product struct {
 
 type Products []*Product
 
-
 type ProductsDB struct {
-	c currency.CurrencyClient
-	l hclog.Logger
+	c      currency.CurrencyClient
+	l      hclog.Logger
+	rates  map[string]float64
+	client currency.Currency_SubscribeRatesClient
 }
 
+func NewProductsDB(c currency.CurrencyClient, l hclog.Logger) *ProductsDB {
 
-func NewProductsDB(c currency.CurrencyClient,l hclog.Logger) *ProductsDB {
+	pb := &ProductsDB{c, l, make(map[string]float64), nil}
+	pb.handleUpdates()
+	//time.Sleep(time.Second * 2)
 
-	return &ProductsDB{c,l}
+	return pb
 }
 
+func (p *ProductsDB) handleUpdates() {
 
+	sub, err := p.c.SubscribeRates(context.Background())
 
-func NewProductStore() Products {
-	ps := productList
-	return ps
+	if err != nil {
+		p.l.Error("unable to subscribe for rates")
+	}
+
+	p.client = sub
+	go func() {
+		for {
+			rr, err := sub.Recv()
+			p.l.Info("received updated rates from server", rr.GetDest().String())
+
+			if err != nil {
+				p.l.Error("error receiving message", "error", err)
+				return
+			}
+			p.rates[rr.Dest.String()] = rr.Rate
+		}
+	}()
 }
-
-func NewProduct() *Product{
-	return  &Product{}
-}
-
 
 func (p *Product) Validate() error {
 	validate := validator.New()
@@ -71,27 +86,27 @@ func ValidateSKU(fl validator.FieldLevel) bool {
 	return true
 }
 
-func (p *ProductsDB) GetProducts(currency string) (Products,error) {
+func (p *ProductsDB) GetProducts(currency string) (Products, error) {
 
 	if currency == "" {
-		return productList,nil
+		return productList, nil
 	}
 
 	rate, err := p.getRate(currency)
 	if err != nil {
-		p.l.Error("unable to get rate","currency",currency)
+		p.l.Error("unable to get rate", "currency", currency, "err", err)
 		return nil, err
 	}
 
 	pr := Products{}
 
-	for _,p := range productList{
+	for _, p := range productList {
 		np := *p
-		np.Price = np.Price *  rate
-		pr = append(pr,&np)
+		np.Price = np.Price * rate
+		pr = append(pr, &np)
 
 	}
-	return pr,nil
+	return pr, nil
 }
 
 func (p *ProductsDB) AddProduct(pr Product) {
@@ -101,7 +116,7 @@ func (p *ProductsDB) AddProduct(pr Product) {
 	productList = append(productList, &pr)
 }
 
-func (p *ProductsDB) GetProductByID(id int,currency string) (*Product, error) {
+func (p *ProductsDB) GetProductByID(id int, currency string) (*Product, error) {
 	if id == -1 {
 		return nil, fmt.Errorf("invalid id %s", id)
 	}
@@ -111,7 +126,7 @@ func (p *ProductsDB) GetProductByID(id int,currency string) (*Product, error) {
 	}
 
 	rate, err := p.getRate(currency)
-	if err !=nil {
+	if err != nil {
 		p.l.Error("unable to get rate")
 		return nil, err
 	}
@@ -164,19 +179,36 @@ func findProduct(id int) (*Product, int, error) {
 	return nil, 0, ErrProductNotFound
 }
 
-func generateID() int {
+func (p *ProductsDB) getRate(destination string) (float64, error) {
 
-	lp := productList[len(productList)-1]
-	return lp.ID + 1
-}
+	if r, ok := p.rates[destination]; ok {
+		return r, nil
+	}
 
-func (p *ProductsDB) getRate(destination string) (float64,error) {
 	rr := &currency.RateRequest{
 		Base: currency.Currencies(currency.Currencies_value["EUR"]),
 		Dest: currency.Currencies(currency.Currencies_value[destination]),
 	}
 
-	resp, err := p.c.GetRate(context.Background(),rr)
+	resp, err := p.c.GetRate(context.Background(), rr)
+	if err != nil {
+		return 0, err
+	}
+
+	p.rates[destination] = resp.Rate //update cache
+
+	if p.client == nil {
+		p.l.Error("client is nil")
+		return 0, err
+	}
+
+	err = p.client.Send(rr)
+
+	if err != nil {
+		p.l.Error("unable to send subscription data")
+		return 0, err
+	}
+
 	return resp.Rate, err
 }
 
